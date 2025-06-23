@@ -1,9 +1,9 @@
-name: Auto Build & Release Magisk Module
+name: Tag-Based Magisk Module Release
 
 on:
   push:
-    branches:
-      - main  # Trigger on every commit to main branch
+    tags:
+      - 'v*'  # Example: v1.0, v1.1.1, v2.0
 
 jobs:
   build-and-release:
@@ -17,28 +17,20 @@ jobs:
         id: extract_name
         run: |
           NAME=$(grep '^id=' module.prop | cut -d= -f2)
+          VERSION=${GITHUB_REF##*/}
           echo "MODULE_NAME=$NAME" >> $GITHUB_ENV
-          echo "VERSION=$(grep '^version=' module.prop | cut -d= -f2)" >> $GITHUB_ENV
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
 
       - name: Zip the module
         run: |
           mkdir dist
           zip -r "dist/${{ env.MODULE_NAME }}-${{ env.VERSION }}.zip" . -x ".git*" -x ".github/*"
 
-      - name: Delete previous release (if exists)
-        continue-on-error: true
-        run: |
-          gh release delete auto-release -y
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Create or update GitHub Release
+      - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          name: Auto Release
-          tag_name: auto-release
+          name: ${{ env.VERSION }}
+          tag_name: ${{ env.VERSION }}
           files: dist/*.zip
-          draft: false
-          prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
