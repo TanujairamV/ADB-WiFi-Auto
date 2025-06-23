@@ -1,9 +1,7 @@
-name: Tag-Based Magisk Module Release
+name: Manual Magisk Module Release
 
 on:
-  push:
-    tags:
-      - 'v*'  # Example: v1.0, v1.1.1, v2.0
+  workflow_dispatch:  # ← this enables manual trigger
 
 jobs:
   build-and-release:
@@ -13,24 +11,24 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Extract module name
-        id: extract_name
+      - name: Extract module name and version
+        id: extract
         run: |
           NAME=$(grep '^id=' module.prop | cut -d= -f2)
-          VERSION=${GITHUB_REF##*/}
+          VERSION=$(grep '^version=' module.prop | cut -d= -f2)
           echo "MODULE_NAME=$NAME" >> $GITHUB_ENV
-          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "MODULE_VERSION=$VERSION" >> $GITHUB_ENV
 
       - name: Zip the module
         run: |
           mkdir dist
-          zip -r "dist/${{ env.MODULE_NAME }}-${{ env.VERSION }}.zip" . -x ".git*" -x ".github/*"
+          zip -r "dist/${{ env.MODULE_NAME }}-${{ env.MODULE_VERSION }}.zip" . -x ".git*" -x ".github/*"
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          name: ${{ env.VERSION }}
-          tag_name: ${{ env.VERSION }}
+          name: Release ${{ env.MODULE_VERSION }}
+          tag_name: v${{ env.MODULE_VERSION }}
           files: dist/*.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
