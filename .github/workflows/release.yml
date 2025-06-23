@@ -1,34 +1,44 @@
-name: Build & Release Magisk Module
+name: Auto Build & Release Magisk Module
 
 on:
   push:
-    tags:
-      - 'v*'   # Trigger only on version tags like v1.0, v1.1, etc.
+    branches:
+      - main  # Trigger on every commit to main branch
 
 jobs:
   build-and-release:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repo
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set module name from prop
-        id: get_name
+      - name: Extract module name
+        id: extract_name
         run: |
           NAME=$(grep '^id=' module.prop | cut -d= -f2)
           echo "MODULE_NAME=$NAME" >> $GITHUB_ENV
+          echo "VERSION=$(grep '^version=' module.prop | cut -d= -f2)" >> $GITHUB_ENV
 
-      - name: Create zip file
+      - name: Zip the module
         run: |
           mkdir dist
-          zip -r dist/${{ env.MODULE_NAME }}.zip . -x ".git*" -x ".github/*"
+          zip -r "dist/${{ env.MODULE_NAME }}-${{ env.VERSION }}.zip" . -x ".git*" -x ".github/*"
 
-      - name: Create GitHub Release
+      - name: Delete previous release (if exists)
+        continue-on-error: true
+        run: |
+          gh release delete auto-release -y
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create or update GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          name: ${{ github.ref_name }}
-          tag_name: ${{ github.ref_name }}
+          name: Auto Release
+          tag_name: auto-release
           files: dist/*.zip
+          draft: false
+          prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
