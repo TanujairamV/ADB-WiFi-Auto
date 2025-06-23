@@ -1,0 +1,6 @@
+id=adb-wifi-auto
+name=ADB over Wi-Fi Auto
+version=1.0
+versionCode=1
+author=Tanujairam
+description=Starts ADB over Wi-Fi (TCP 5555) on every boot automatically
